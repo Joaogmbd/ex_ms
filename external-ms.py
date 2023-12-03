@@ -77,4 +77,3 @@ external_merge_sort(input_file, output_file, chunk_size)
 # 150000 =~ 5mb
 # 3000000 =~ 100mb
 # 15000000 =~ 500mb
-
