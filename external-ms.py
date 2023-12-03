@@ -1,58 +1,80 @@
+import os
 import heapq
-import sys
 
-# essa função eh a primeira parte do external merge sort, onde os dados sao separados em fragmentos 
-# e organizados separadamente.
-def cria_fragmento_organizado(caminho_do_arquivo, tam_frag):
-    fragmentos = []
-    with open(caminho_do_arquivo, 'r') as file:
-        frag = []
-        for linha in file:
-            frag.append(str(linha.strip()))
-            # preenche o fragmento com as linhas lidas do arquivo, até chegar no tamanho declarado "tam_frag"
-            if len(frag) == tam_frag:
-                frag.sort()
-                fragmentos.append(frag)
-                frag = []
+def external_merge_sort(input_file, output_file, chunk_size):
+    # Step 1: Divide the input into sorted chunks and write them to temporary files
+    temp_files = []
+    with open(input_file, 'r') as infile:
+        chunk = []
+        while True:
+            line = infile.readline().strip()
+            if not line:
+                break
+            chunk.append(line)
+            if len(chunk) == chunk_size:
+                chunk.sort()
+                temp_file = f'temp/temp_{len(temp_files)}.txt'
+                temp_files.append(temp_file)
+                with open(temp_file, 'w') as temp:
+                    temp.write('\n'.join(chunk))
+                chunk = []
+        # if the input file elements aren't divisible by the chunk size, there'll be remaining elments, sort them:
+        if chunk:
+            chunk.sort()
+            temp_file = f'temp_{len(temp_files)}.txt'
+            temp_files.append(temp_file)
+            with open(temp_file, 'w') as temp:
+                temp.write('\n'.join(chunk))
 
-        # se ainda sobram dados que nao se encaixam na quantidade declarada para o tamanho do fragmento, organize-os
-        if frag:
-            frag.sort()
-            fragmentos.append(frag)
+    # Step 2: Perform k-ways merge on the sorted chunks
+    with open(output_file, 'w') as outfile:
+        # Initialize a heap to perform the k-ways merge
+        heap = []
+        temp_file_handles = []
 
-    return fragmentos
+    # priority line?
+        for temp_file in temp_files:
+            temp_file_handle = open(temp_file, 'r')
+            line = temp_file_handle.readline().strip()
+            if line:
+                heapq.heappush(heap, (line, temp_file_handle))
+                temp_file_handles.append(temp_file_handle)
 
-# agora no segundo passo, juntamos os fragmentos em um arquivo unico de output,
-# onde todos os dados estão organizados
-
-# A estrutura de dados escolhida para fazer o merge dos fragmentos é a heap (exige pouco recurso para acessar grandes conjuntos de dados).
-# Por isso o import na biblioteca "heapq"
-
-def juntar_frag_organizados(fragmentos, caminho_saida):
-    # declaracao de min_heap (arv. binaria completa, onde o valor de um nó é sempre menor que o valor de seus filhos)
-    heap = [(frag[0], i, 0) for i, frag in enumerate(fragmentos) if frag]
-    heapq.heapify(heap)
-
-    # pega o minimo valor do heap, e escreve no arquivo de saída
-    with open(caminho_saida, 'w') as arquivo:
+        # Perform the k-ways merge
         while heap:
-            valor, frag_indice, elemento_indice = heapq.heappop(heap)
-            arquivo.write(str(valor) + '\n')
+            value, temp_file_handle = heapq.heappop(heap)
+            outfile.write(value + '\n')
+            next_line = temp_file_handle.readline().strip()
+            if next_line:
+                heapq.heappush(heap, (next_line, temp_file_handle))
 
-            # coloca os proximos elementos do fragmento no heap.
-            if elemento_indice + 1 < len(fragmentos[frag_indice]):
-                prox_elemento = fragmentos[frag_indice][elemento_indice + 1]
-                heapq.heappush(heap, (prox_elemento, frag_indice, elemento_indice + 1))
+        # Close all temporary file handles
+        for temp_file_handle in temp_file_handles:
+            temp_file_handle.close()
 
-# chama as duas funções criadas
-def merge_sort_externo(caminho_do_arquivo, caminho_saida, tam_frag):
-    fragmentos = cria_fragmento_organizado(caminho_do_arquivo, tam_frag)
-    juntar_frag_organizados(fragmentos, caminho_saida)
+    # Step 3: Clean up temporary files
+    for temp_file in temp_files:
+        os.remove(temp_file)
 
-# use os argumentos da linha de comando para passar os valores da variaveis abaixo 
+# Example usage:
+input_file = 'inputs/1m.txt/1m.txt'
+output_file = 'outputs/1m-sorted.txt'
 
-caminho_do_arquivo = sys.argv[1]
-caminho_saida = sys.argv[2]
-tam_frag = sys.argv[3]
+while True:
+    escolha = input("\n1 - 5 Megabytes\n2 - 100 Megabytes\nEscolha o limite de memória que o programa utilizará: ")
+    if (escolha == "1"):
+        chunk_size = 150000
+        break
+    elif (escolha == "2"):
+        chunk_size = 3000000
+        break
+    else:
+        print("Insira uma opção válida!")
 
-merge_sort_externo (caminho_do_arquivo, caminho_saida, tam_frag)
+external_merge_sort(input_file, output_file, chunk_size)
+
+
+# 150000 =~ 5mb
+# 3000000 =~ 100mb
+# 15000000 =~ 500mb
+
