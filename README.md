@@ -94,3 +94,8 @@ Essa é a parte final do código, onde é definido o caminho para o arquivo de i
 
 A condição foi definida com base na solicitação da atividade feita pelo professor, onde devemos selecionar se queremos organizar o arquivo menor (com 1 milhão de entradas) ou o arquivo maior (com 500 milhões de entradas). Essa escolha define o tamanho do chunk utilizado na primeira parte do código.
 
+## Chunk size para MB
+
+### 150000 =~ 5mb
+### 3000000 =~ 100mb
+### 15000000 =~ 500mb
